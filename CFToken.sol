@@ -1,11 +1,16 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "./CrowdFundBaseContract.sol";
+
 contract CFToken is ERC20{
      
      address owner;
      address factory;
-     mapping(address=>uint256) crowdFundContracts;
+     mapping(address=>uint256) lockedTokenMapping;
+     mapping(address=>bool) approvedFundContracts;
+
+     error InvalidContractAddress();
      
      constructor(uint256 totalSupply,address _factory) ERC20("CFToken","CF"){
          owner=msg.sender;
@@ -20,9 +25,17 @@ contract CFToken is ERC20{
 
 
      function addContract(address fundContract) public onlyFactory {
-        crowdFundContracts[fundContract]=0;
+        approvedFundContracts[fundContract]=true;
      }
 
+     function transferLock(address fundContract,uint256 amount) public{
+          if(!approvedFundContracts[fundContract])
+          {
+             revert InvalidContractAddress();
+          }
+          lockedTokenMapping[fundContract]=lockedTokenMapping[fundContract]+amount;
+          CrowdFundBaseContract(fundContract).addAmount(msg.sender,amount);
+     }
 
 
 
