@@ -9,7 +9,5 @@ contract Factory {
         address newProjectAddress = address(c); // here
         CFToken(tokenAddress).addContract(newProjectAddress);
         dep=newProjectAddress;
-
-        return newProjectAddress;
   }
 }
