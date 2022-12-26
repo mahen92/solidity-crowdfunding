@@ -1,8 +1,8 @@
 pragma solidity ^0.8.0;
 
 contract CrowdFundBaseContract{
-     mapping(address=>uint256) addressMapping;
-     mapping(address=>bool) availabilityMapping;
+     mapping(address=>uint256) public addressMapping;
+     mapping(address=>bool) public availabilityMapping;
      address public immutable cftoken;
      bool hasSetToken;
      uint public immutable setBlockNumber=block.number;
@@ -25,12 +25,15 @@ contract CrowdFundBaseContract{
     }
 
 
-     function addAddress(address user,uint256 amount) public onlyCfToken{
-         addressMapping[user]=amount;
-         availabilityMapping[user]=true;
-     }
-
-     function updateAmountForAddress(address user,uint256 amount) public onlyCfToken{
-         addressMapping[user]=addressMapping[user]+amount;
+     function addAmount(address user,uint256 amount) public onlyCfToken{
+         if(!availabilityMapping[user])
+         {
+            availabilityMapping[user]=true;
+            addressMapping[user]=amount;
+         }
+         else
+         {
+            addressMapping[user]=addressMapping[user]+amount;
+         }
      }
 }
