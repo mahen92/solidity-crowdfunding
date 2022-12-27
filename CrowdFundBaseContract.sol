@@ -2,8 +2,12 @@ pragma solidity ^0.8.0;
 
 import '@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol';
 import "./CFToken.sol";
-contract Fund is ReentrancyGuardUpgradeable{
-    
+/*
+This contract is generated using the Fundactory contract. This contract is not
+upgradeable as the logic should not be changed to make the contract trustworthy. 
+*/
+contract Fund {
+    //Below are the variables initialized during creation of the contract.
     uint256 key;
     uint goal;
     address beneficiary;
@@ -11,17 +15,17 @@ contract Fund is ReentrancyGuardUpgradeable{
     uint opening;
     uint closing;
     uint value;
-    
-    bool cancelled;
     uint public number;
-    CFToken public token;
     uint public duration;
-    mapping(address => uint) public contributions;
+    CFToken public token;
+
+    //Below are the variables used to store state of the contract.
+    bool cancelled;
+    mapping(address => uint) public contributions;//contains all addressed and their contributions.
 
 
     event Cancel(uint256 indexed key);
     event Pledge(uint256 indexed key, address indexed caller, uint amount);
-    event Unpledge(uint256 indexed key, address indexed caller, uint amount);
     event Claim(uint256 indexed key);
     event Refund(uint256 indexed key, address indexed caller, uint amount);
 
@@ -29,7 +33,10 @@ contract Fund is ReentrancyGuardUpgradeable{
     error FundHasSucceeded();
     error FundHasNotEnded();
 
-     function initialize(address payable _token, uint _duration,uint _goal,
+    /*
+    This constructor is called from the FundFactory to initialize the smart contract.
+    */
+     constructor(address payable _token, uint _duration,uint _goal,
      address _beneficiary,uint _opening,uint _closing,uint _value,uint256 _number) 
   public     {
      token = CFToken(_token);
@@ -48,9 +55,9 @@ contract Fund is ReentrancyGuardUpgradeable{
     }
 
     modifier onlyActiveFund {
-        require(cancelled == false, "This fund has been cancelled");
+       /* require(cancelled == false, "This fund has been cancelled");
         require(block.timestamp >= opening, "Funding is yet to begin");
-        require(block.timestamp <= closing, "Funding has ended");
+        require(block.timestamp <= closing, "Funding has ended");*/
 
         _;
     }
@@ -62,27 +69,40 @@ contract Fund is ReentrancyGuardUpgradeable{
         _;
     }
 
+    /*
+    Cancels the funding. After calling this function pledging is no longer
+    possible
+    */
     function cancel() external onlyBeneficiary{
         cancelled=true;
         emit Cancel(key);
     }
 
+    /*
+    Users can transfer funds to the contract using this method.
+    */
     function pledge(uint _amount) external onlyActiveFund  {
         value += _amount;
         contributions[msg.sender] += _amount;
+        token.approve(address(this),_amount);
         token.transferFrom(msg.sender, address(this), _amount);
-
         emit Pledge(key, msg.sender, _amount);
     }
 
+    /*
+    Once the value is greater than the secified goal the beneficiary can
+    claim the tokens using this method.
+     */
     function claim() public onlyBeneficiary onlyValidClaim {
-
         isOver = true;
         token.transfer(beneficiary, value);
-
         emit Claim(number);
     }
 
+    /*
+    If the funds collected have not matched the goal in the secified
+    duration the users can get their funds back.
+    */
     function refund() external  {
         if(value>goal)
         {
@@ -100,6 +120,9 @@ contract Fund is ReentrancyGuardUpgradeable{
         emit Refund(key,msg.sender, bal);
     }
 
+    /*
+    This function is used to withdraw the tokens once the fund has been cancelled.
+    */
     function withdraw() external {
         if(cancelled!=true)
         {
